@@ -36,16 +36,16 @@
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/hacker-file-navigator
-cd hacker-file-navigator
+git clone https://github.com/rhyths-simp/hacker-navir
+cd hacker-navir
 python navigator.py
 ```
 
 On Termux:
 ```bash
 pkg install python
-git clone https://github.com/yourusername/hacker-file-navigator
-cd hacker-file-navigator
+git clone https://github.com/rhyths-simp/hacker-navir
+cd hacker-navir
 python navigator.py
 ```
 
