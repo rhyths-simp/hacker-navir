@@ -1,7 +1,7 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────
 #  Hacker File Navigator — Installer
-#  Usage:  curl -fsSL https://raw.githubusercontent.com/YOURUSERNAME/hacker-file-navigator/main/install.sh | bash
+#  Usage:  curl -fsSL https://raw.githubusercontent.com/rhyths-simp/hacker-navir/main/install.sh | bash
 # ─────────────────────────────────────────────────────────────
 
 set -e   # stop on any error
