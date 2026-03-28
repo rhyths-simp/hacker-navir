@@ -67,23 +67,83 @@ fi
 
 cat > "$BIN_DIR/navir" << EOF
 #!/bin/bash
-python3 $NAV_PY "\$@"
+# ── Hacker File Navigator launcher ──────────────────────────
+INSTALL_DIR="\$HOME/.navigator/app"
+NAV_PY="$NAV_PY"
+VERSION_FILE="\$INSTALL_DIR/version.txt"
+
+case "\$1" in
+
+  --version|-v)
+    if [ -f "\$VERSION_FILE" ]; then
+      echo "navir \$(cat \$VERSION_FILE)"
+    else
+      echo "navir (version unknown)"
+    fi
+    ;;
+
+  --update|-u)
+    echo ""
+    echo "  ◈ Hacker File Navigator — Updater"
+    echo "  ────────────────────────────────────"
+    if [ ! -d "\$INSTALL_DIR/.git" ]; then
+      echo "  ERROR: Install directory not found."
+      echo "  Run the installer again to reinstall."
+      exit 1
+    fi
+    echo "  ↻ Checking for updates..."
+    BEFORE=\$(git -C "\$INSTALL_DIR" rev-parse HEAD)
+    git -C "\$INSTALL_DIR" pull --quiet
+    AFTER=\$(git -C "\$INSTALL_DIR" rev-parse HEAD)
+    if [ "\$BEFORE" = "\$AFTER" ]; then
+      echo "  ✓ Already up to date."
+    else
+      echo "  ✓ Updated successfully!"
+      if [ -f "\$VERSION_FILE" ]; then
+        echo "  ✓ Now on version: \$(cat \$VERSION_FILE)"
+      fi
+    fi
+    echo ""
+    ;;
+
+  --help|-h)
+    echo ""
+    echo "  navir              Launch the file navigator"
+    echo "  navir --update     Update to the latest version"
+    echo "  navir --version    Show current version"
+    echo "  navir --help       Show this help"
+    echo ""
+    ;;
+
+  *)
+    python3 "\$NAV_PY" "\$@"
+    ;;
+
+esac
 EOF
 
 chmod +x "$BIN_DIR/navir"
 echo "  ✓ navir command created at $BIN_DIR/navir"
 
-# ── 5. Create user plugin dir ─────────────────────────────────
+# ── 5. Write version file ─────────────────────────────────────
+# Pull version from the latest git tag, fallback to v1.0.0
+VERSION=$(git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+echo "$VERSION" > "$INSTALL_DIR/version.txt"
+echo "  ✓ Version: $VERSION"
+
+# ── 6. Create user plugin dir ─────────────────────────────────
 mkdir -p "$HOME/.navigator/plugins"
 echo "  ✓ Plugin folder ready at ~/.navigator/plugins/"
 
 # ── Done ──────────────────────────────────────────────────────
 echo ""
-echo "  ✓ All done! Type  navir  to launch."
+echo "  ✓ All done!"
+echo ""
+echo "  navir              → launch"
+echo "  navir --update     → update to latest version"
+echo "  navir --version    → show version"
+echo "  navir --help       → show all commands"
 echo ""
 echo "  To add a plugin:"
 echo "    Drop any .py file into ~/.navigator/plugins/"
-echo ""
-echo "  To update later:"
-echo "    Run this installer again — it will pull latest changes."
 echo ""
