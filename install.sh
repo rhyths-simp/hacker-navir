@@ -93,16 +93,16 @@ case "\$1" in
     fi
     echo "  ↻ Checking for updates..."
     BEFORE=\$(git -C "\$INSTALL_DIR" rev-parse HEAD)
-    git -C "\$INSTALL_DIR" pull --quiet
-    AFTER=\$(git -C "\$INSTALL_DIR" rev-parse HEAD)
-    if [ "\$BEFORE" = "\$AFTER" ]; then
-      echo "  ✓ Already up to date."
-    else
-      echo "  ✓ Updated successfully!"
-      if [ -f "\$VERSION_FILE" ]; then
-        echo "  ✓ Now on version: \$(cat \$VERSION_FILE)"
-      fi
-    fi
+    git -C "$INSTALL_DIR" pull --quiet
+        AFTER=$(git -C "$INSTALL_DIR" rev-parse HEAD)
+        # always refresh version.txt after pull
+        git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null > "$VERSION_FILE" || true
+        if [ "$BEFORE" = "$AFTER" ]; then
+          echo "  ✓ Already up to date."
+        else
+          echo "  ✓ Updated successfully!"
+          echo "  ✓ Now on version: $(cat $VERSION_FILE)"
+        fi
     echo ""
     ;;
 
