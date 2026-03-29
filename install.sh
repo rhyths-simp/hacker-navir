@@ -1,13 +1,16 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────
 #  Hacker File Navigator — Installer
-#  Usage:  curl -fsSL https://raw.githubusercontent.com/rhyths-simp/hacker-navir/main/install.sh | bash
+#  Usage:
+#    curl -fsSL https://raw.githubusercontent.com/rhyths-simp/hacker-navir/main/install.sh -o install.sh && bash install.sh
 # ─────────────────────────────────────────────────────────────
 
-set -e   # stop on any error
+# NOTE: no set -e here — we handle errors ourselves so the script
+# never crashes silently mid-install
 
 REPO="https://github.com/rhyths-simp/hacker-navir.git"
 INSTALL_DIR="$HOME/.navigator/app"
+VERSION_FILE="$INSTALL_DIR/version.txt"
 
 echo ""
 echo "  ◈ Hacker File Navigator — Installer"
@@ -48,15 +51,22 @@ if [ -d "$INSTALL_DIR/.git" ]; then
 else
     echo "  ↓ Cloning repository..."
     mkdir -p "$(dirname "$INSTALL_DIR")"
-    git clone --quiet "$REPO" "$INSTALL_DIR"
+    if ! git clone --quiet "$REPO" "$INSTALL_DIR"; then
+        echo "  ERROR: Failed to clone repository."
+        echo "  Check your internet connection and try again."
+        exit 1
+    fi
 fi
 
 echo "  ✓ Files ready at $INSTALL_DIR"
 
-# ── 4. Create navir command ───────────────────────────────────
-NAV_PY="$INSTALL_DIR/navigator.py"
+# ── 4. Write version file ─────────────────────────────────────
+# Always refresh version.txt from latest git tag
+VERSION=$(git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+echo "$VERSION" > "$VERSION_FILE"
+echo "  ✓ Version: $VERSION"
 
-# Detect bin dir (Termux vs standard Linux)
+# ── 5. Detect bin dir (Termux vs Linux) ───────────────────────
 if [ -d "/data/data/com.termux/files/usr/bin" ]; then
     BIN_DIR="/data/data/com.termux/files/usr/bin"
 elif [ -d "$HOME/.local/bin" ]; then
@@ -65,20 +75,30 @@ else
     BIN_DIR="/usr/local/bin"
 fi
 
-cat > "$BIN_DIR/navir" << EOF
-#!/bin/bash
-# ── Hacker File Navigator launcher ──────────────────────────
-INSTALL_DIR="\$HOME/.navigator/app"
-NAV_PY="$NAV_PY"
-VERSION_FILE="\$INSTALL_DIR/version.txt"
+# ── 6. Create navir launcher ──────────────────────────────────
+# IMPORTANT: INSTALL_DIR and VERSION_FILE are resolved at runtime
+# inside the launcher (using $HOME), not hardcoded at install time.
+# This means the launcher keeps working even if the home path changes.
 
-case "\$1" in
+cat > "$BIN_DIR/navir" << 'LAUNCHEREOF'
+#!/bin/bash
+# ── Hacker File Navigator launcher ───────────────────────────
+INSTALL_DIR="$HOME/.navigator/app"
+NAV_PY="$INSTALL_DIR/navigator.py"
+VERSION_FILE="$INSTALL_DIR/version.txt"
+
+_write_version() {
+    git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null \
+        > "$VERSION_FILE" || echo "v1.0.0" > "$VERSION_FILE"
+}
+
+case "$1" in
 
   --version|-v)
-    if [ -f "\$VERSION_FILE" ]; then
-      echo "navir \$(cat \$VERSION_FILE)"
+    if [ -f "$VERSION_FILE" ]; then
+        echo "navir $(cat $VERSION_FILE)"
     else
-      echo "navir (version unknown)"
+        echo "navir (version unknown)"
     fi
     ;;
 
@@ -86,23 +106,24 @@ case "\$1" in
     echo ""
     echo "  ◈ Hacker File Navigator — Updater"
     echo "  ────────────────────────────────────"
-    if [ ! -d "\$INSTALL_DIR/.git" ]; then
-      echo "  ERROR: Install directory not found."
-      echo "  Run the installer again to reinstall."
-      exit 1
+    if [ ! -d "$INSTALL_DIR/.git" ]; then
+        echo "  ERROR: Install directory not found."
+        echo "  Run the installer again to reinstall:"
+        echo "  curl -fsSL https://raw.githubusercontent.com/rhyths-simp/hacker-navir/main/install.sh -o install.sh && bash install.sh"
+        exit 1
     fi
     echo "  ↻ Checking for updates..."
-    BEFORE=\$(git -C "\$INSTALL_DIR" rev-parse HEAD)
+    BEFORE=$(git -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null)
     git -C "$INSTALL_DIR" pull --quiet
-        AFTER=$(git -C "$INSTALL_DIR" rev-parse HEAD)
-        # always refresh version.txt after pull
-        git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null > "$VERSION_FILE" || true
-        if [ "$BEFORE" = "$AFTER" ]; then
-          echo "  ✓ Already up to date."
-        else
-          echo "  ✓ Updated successfully!"
-          echo "  ✓ Now on version: $(cat $VERSION_FILE)"
-        fi
+    AFTER=$(git -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null)
+    # always refresh version.txt after pull
+    _write_version
+    if [ "$BEFORE" = "$AFTER" ]; then
+        echo "  ✓ Already up to date. ($(cat $VERSION_FILE))"
+    else
+        echo "  ✓ Updated successfully!"
+        echo "  ✓ Now on version: $(cat $VERSION_FILE)"
+    fi
     echo ""
     ;;
 
@@ -113,25 +134,27 @@ case "\$1" in
     echo "  navir --version    Show current version"
     echo "  navir --help       Show this help"
     echo ""
+    echo "  To add a plugin:"
+    echo "    Drop any .py file into ~/.navigator/plugins/"
+    echo ""
     ;;
 
   *)
-    python3 "\$NAV_PY" "\$@"
+    if [ ! -f "$NAV_PY" ]; then
+        echo "  ERROR: navigator.py not found at $NAV_PY"
+        echo "  Try running: navir --update"
+        exit 1
+    fi
+    python3 "$NAV_PY" "$@"
     ;;
 
 esac
-EOF
+LAUNCHEREOF
 
 chmod +x "$BIN_DIR/navir"
 echo "  ✓ navir command created at $BIN_DIR/navir"
 
-# ── 5. Write version file ─────────────────────────────────────
-# Pull version from the latest git tag, fallback to v1.0.0
-VERSION=$(git -C "$INSTALL_DIR" describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-echo "$VERSION" > "$INSTALL_DIR/version.txt"
-echo "  ✓ Version: $VERSION"
-
-# ── 6. Create user plugin dir ─────────────────────────────────
+# ── 7. Create user plugin dir ─────────────────────────────────
 mkdir -p "$HOME/.navigator/plugins"
 echo "  ✓ Plugin folder ready at ~/.navigator/plugins/"
 

@@ -38,7 +38,7 @@
 **One command — works on Termux and Linux:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rhythms-simp/hacker-navir/main/install.sh -o install.sh && bash install.sh
+curl -fsSL https://raw.githubusercontent.com/rhyths-simp/hacker-navir/main/install.sh -o install.sh && bash install.sh
 ```
 
 The installer will:
