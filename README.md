@@ -35,60 +35,84 @@
 
 ## Installation
 
+**One command — works on Termux and Linux:**
+
 ```bash
-git clone https://github.com/rhyths-simp/hacker-navir
-cd hacker-navir
-python navigator.py
+curl -fsSL https://raw.githubusercontent.com/rhythms-simp/hacker-navir/main/install.sh -o install.sh && bash install.sh
 ```
 
-On Termux:
+The installer will:
+- Check Python and git are available
+- Clone the repo into `~/.navigator/app/`
+- Create the `navir` command so you can launch from anywhere
+- Set up your personal plugin folder at `~/.navigator/plugins/`
+
+Then just type:
 ```bash
-pkg install python
-git clone https://github.com/rhyths-simp/hacker-navir
-cd hacker-navir
-python navigator.py
+navir
 ```
 
-To run from anywhere, add a shell alias:
+**On Termux** — if you don't have Python or git yet:
 ```bash
-echo 'alias nav="python /path/to/navigator.py"' >> ~/.bashrc
-source ~/.bashrc
+pkg install python git
+```
+Then run the install command above.
+
+---
+
+## Updating
+
+```bash
+navir --update
+```
+
+That's it. Pulls the latest version from GitHub automatically.
+
+---
+
+## Commands
+
+```bash
+navir              # launch the file navigator
+navir --update     # update to the latest version
+navir --version    # show current version
+navir --help       # show all commands
 ```
 
 ---
 
 ## Keyboard shortcuts
 
-| Key        | Action                          |
-|------------|---------------------------------|
-| `↑ / W`    | Move up                         |
-| `↓ / S`    | Move down                       |
-| `Enter`    | Open file or enter folder       |
-| `Esc`      | Go up to parent folder          |
-| `/`        | Search / filter current folder  |
-| `Q`        | Quit                            |
-| `Ctrl+T`   | Context menu (all actions)      |
-| `Ctrl+N`   | New file                        |
-| `Ctrl+F`   | New folder                      |
-| `Ctrl+C`   | Copy selected                   |
-| `Ctrl+X`   | Cut selected (for move)         |
-| `Ctrl+V`   | Paste / move to destination     |
-| `Ctrl+D`   | Delete → recycle bin            |
-| `Ctrl+R`   | Rename                          |
+| Key | Action |
+|-----|--------|
+| `↑ / W` | Move up |
+| `↓ / S` | Move down |
+| `Enter` | Open file or enter folder |
+| `Esc` | Go up to parent folder |
+| `/` | Search / filter current folder |
+| `Q` | Quit |
+| `Ctrl+T` | Context menu (all actions) |
+| `Ctrl+N` | New file |
+| `Ctrl+F` | New folder |
+| `Ctrl+C` | Copy selected |
+| `Ctrl+X` | Cut selected (for move) |
+| `Ctrl+V` | Paste / move to destination |
+| `Ctrl+D` | Delete → recycle bin |
+| `Ctrl+R` | Rename |
 
 Plugin shortcuts are added automatically when plugins are installed:
 
-| Key        | Plugin             | Action                       |
-|------------|--------------------|------------------------------|
-| `Ctrl+G`   | git_plugin         | Git status for current folder |
-| `Ctrl+B`   | bookmarks_plugin   | Save / jump to folders        |
-| `Ctrl+P`   | preview_plugin     | Preview file contents         |
+| Key | Plugin | Action |
+|-----|--------|--------|
+| `Ctrl+G` | git_plugin | Git status for current folder |
+| `Ctrl+B` | bookmarks_plugin | Save / jump to folders |
+| `Ctrl+P` | preview_plugin | Preview file contents |
 
 ---
 
 ## Plugin system
 
-Drop any `.py` file into `plugins/` (bundled) or `~/.navigator/plugins/` (personal):
+Drop any `.py` file into `~/.navigator/plugins/` and it loads on next start:
 
 ```python
 NAME        = "hello"
@@ -102,7 +126,7 @@ def on_ctrl_e(api, path, selected_item):
     api.show_status(f"Hello from {path}!")
 ```
 
-The plugin auto-appears in the startup report and in the `Ctrl+T` menu.  
+The plugin auto-appears in the startup report and in the `Ctrl+T` menu.
 Plugin errors never crash the app — they are logged to `~/.navigator/plugin_errors.log`.
 
 → Full guide: [docs/PLUGIN_DEV.md](docs/PLUGIN_DEV.md)
@@ -112,7 +136,7 @@ Plugin errors never crash the app — they are logged to `~/.navigator/plugin_er
 ## Project structure
 
 ```
-navigator/
+hacker-navir/
 ├── navigator.py          # main application
 ├── plugins/              # bundled plugins
 │   ├── git_plugin.py
@@ -120,12 +144,13 @@ navigator/
 │   └── preview_plugin.py
 ├── docs/
 │   └── PLUGIN_DEV.md     # plugin authoring guide
+├── install.sh            # one-command installer
 ├── README.md
 ├── LICENSE
 └── .gitignore
 ```
 
-User plugins go in `~/.navigator/plugins/` — they are never overwritten by updates.
+User plugins go in `~/.navigator/plugins/` — never overwritten by updates.
 
 ---
 
@@ -139,7 +164,7 @@ Deleted items are zipped and stored in `~/recycle_bin/` as timestamped archives:
   old_project_20250327_091155.zip
 ```
 
-To restore a file, unzip it manually:
+To restore:
 ```bash
 cd ~/recycle_bin
 unzip myfile.txt_20250328_143022.zip
@@ -153,8 +178,8 @@ Pull requests welcome. Before submitting:
 
 1. Make sure the app runs on Python 3.9+ with no third-party packages
 2. Test on both a standard Linux terminal and Termux if possible
-3. If you're adding a plugin, include `NAME`, `VERSION`, `DESCRIPTION`, and a `register(api)` function
-4. Keep `navigator.py` self-contained — no new files in the root beyond what's already there
+3. If adding a plugin, include `NAME`, `VERSION`, `DESCRIPTION`, and a `register(api)` function
+4. Keep `navigator.py` self-contained — no new root files
 
 ---
 
