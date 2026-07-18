@@ -186,3 +186,9 @@ Pull requests welcome. Before submitting:
 ## License
 
 MIT — see [LICENSE](LICENSE)
+
+---
+
+## Thanks
+
+Thanks for using **Hacker File Navigator**! 🎉
